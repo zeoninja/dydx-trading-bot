@@ -8,10 +8,13 @@ load_dotenv()
 MODE = "DEVELOPMENT"
 
 # Close all open positions and orders
-ABORT_ALL_POSITIONS = False
+ABORT_ALL_POSITIONS = True
 
 # Find Cointegrated pairs
-FIND_COINTEGRATED = False
+FIND_COINTEGRATED = True
+
+# Manage Exits
+MANAGE_EXITS = True
 
 # Place Trades
 PLACE_TRADES = True
