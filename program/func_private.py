@@ -1,24 +1,49 @@
 from datetime import datetime, timedelta
 from func_utils import format_number
 import time
+import json
 
 from pprint import pprint
+
+
+# Get existing open positions
+def is_open_positions(client, market):
+    # Protect API
+    time.sleep(0.2)
+
+    # Get positions
+    all_positions = client.private.get_positions(
+        market=market,
+        status="OPEN"
+    )
+
+    # Determine if open
+    if len(all_positions.data["positions"]) > 0:
+        return True
+    else:
+        return False
+
+
 # Check order status
 def check_order_status(client, order_id):
     order = client.private.get_order_by_id(order_id)
-    return order.data["order"]["status"]
+    if order.data:
+        if "order" in order.data.keys():
+            return order.data["order"]["status"]
+    return "FAILED"
+
 
 # Place market order
 def place_market_order(client, market, side, size, price, reduce_only):
-    # Get Position ID
+    # Get Position Id
     account_response = client.private.get_account()
     position_id = account_response.data["account"]["positionId"]
 
-    # Get EXP TIME
+    # Get expiration time
     server_time = client.public.get_time()
     expiration = datetime.fromisoformat(server_time.data["iso"].replace("Z", "")) + timedelta(seconds=70)
 
-    # Place an Order
+    # Place an order
     placed_order = client.private.create_order(
         position_id=position_id,  # required for creating the order signature
         market=market,
@@ -32,12 +57,15 @@ def place_market_order(client, market, side, size, price, reduce_only):
         time_in_force="FOK",
         reduce_only=reduce_only
     )
-    # Return Result
+
+    # print(placed_order.data)
+
+    # Return result
     return placed_order.data
+
 
 # Abort all open positions
 def abort_all_positions(client):
-
     # Cancel all orders
     client.private.cancel_all_orders()
 
@@ -61,14 +89,13 @@ def abort_all_positions(client):
         # Loop through each position
         for position in all_positions:
 
-            # Determine market
+            # Determine Market
             market = position["market"]
 
             # Determine Side
             side = "BUY"
             if position["side"] == "LONG":
                 side = "SELL"
-            print(market, side)
 
             # Get Price
             price = float(position["entryPrice"])
@@ -92,5 +119,10 @@ def abort_all_positions(client):
             # Protect API
             time.sleep(0.2)
 
-        #Return closed orders
+        # Override json file with empty list
+        bot_agents = []
+        with open("bot_agents.json", "w") as f:
+            json.dump(bot_agents, f)
+
+        # Return closed orders
         return close_orders
